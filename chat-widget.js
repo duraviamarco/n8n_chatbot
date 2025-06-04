@@ -176,7 +176,7 @@
             display: flex;
         }
 
-        .n8n-chat-widget .chat-messages { /* Corretto da .chat-s */
+        .n8n-chat-widget .chat-messages {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
@@ -185,7 +185,7 @@
             flex-direction: column;
         }
 
-        .n8n-chat-widget .chat-message { /* Corretto da .chat- */
+        .n8n-chat-widget .chat-message {
             padding: 12px 16px;
             margin: 8px 0;
             border-radius: 12px;
@@ -195,7 +195,7 @@
             line-height: 1.5;
         }
 
-        .n8n-chat-widget .chat-message.user { /* Corretto da .chat-.user */
+        .n8n-chat-widget .chat-message.user {
             background: linear-gradient(135deg, var(--chat--color-primary) 0%, var(--chat--color-secondary) 100%);
             color: white;
             align-self: flex-end;
@@ -203,7 +203,7 @@
             border: none;
         }
 
-        .n8n-chat-widget .chat-message.bot { /* Corretto da .chat-.bot */
+        .n8n-chat-widget .chat-message.bot {
             background: var(--chat--color-background);
             border: 1px solid rgba(133, 79, 255, 0.2);
             color: var(--chat--color-font);
@@ -381,7 +381,7 @@
             <h2 class="welcome-text">${config.branding.welcomeText}</h2>
             <p class="response-text">${config.branding.responseTimeText}</p>
             <button class="new-chat-btn">
-                <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"> <!-- Corretto da class="-icon" -->
+                <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/>
                 </svg>
                 Chatta con noi!
@@ -578,4 +578,4 @@
               chatContainer.classList.remove('open');
         });
     });
-})(); // <--- QUESTA RIGA È STATA AGGIUNTA/CORRETTA
+})(); // QUESTA È LA CHIUSURA CORRETTA E DEVE ESSERE L'ULTIMA COSA NEL FILE
