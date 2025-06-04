@@ -467,7 +467,13 @@
         newConversationScreen.style.display = 'none';
         chatInterfaceScreen.style.display = 'flex'; 
         
+        // IMPORTANT: Clear previous messages when starting a new conversation
+        messagesContainer.innerHTML = ''; 
+
         try {
+            // Make the call to n8n to initialize the session.
+            // We DO NOT append a bot message here, as the actual first bot response
+            // will come AFTER the user sends their first message via sendMessage().
             const response = await fetch(config.webhook.url, {
                 method: 'POST',
                 headers: {
@@ -476,14 +482,12 @@
                 body: JSON.stringify(data)
             });
 
-            const responseData = await response.json();
-            
-            const botMessageDiv = document.createElement('div');
-            botMessageDiv.className = 'chat-message bot';
-            // Gestisce sia array che oggetti singoli per l'output
-            botMessageDiv.textContent = Array.isArray(responseData) && responseData.length > 0 ? responseData[0].output : (responseData.output || 'Something went wrong.');
-            messagesContainer.appendChild(botMessageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            // We still need to parse the response to ensure it's valid JSON,
+            // even if we don't display its 'output' immediately.
+            const responseData = await response.json(); 
+            // Optional: You could log responseData here to debug n8n's initial response.
+            // console.log("n8n loadPreviousSession response:", responseData);
+
         } catch (error) {
             console.error('Error starting new conversation:', error);
             const errorMessageDiv = document.createElement('div');
@@ -495,6 +499,7 @@
             newConversationScreen.style.display = 'flex';
             chatInterfaceScreen.style.display = 'none';
             currentSessionId = ''; // Reset session ID if it failed to start
+            messagesContainer.innerHTML = ''; // Clear messages again if error
         }
     }
 
