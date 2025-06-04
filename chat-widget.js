@@ -15,7 +15,7 @@
             bottom: 20px;
             right: 20px;
             z-index: 1000;
-            display: none; /* Hidden by default, shown by toggle button */
+            display: none; /* MODIFIED: Hidden by default, shown by toggle button */
             width: 380px;
             height: 600px;
             background: var(--chat--color-background);
@@ -25,13 +25,17 @@
             overflow: hidden;
             font-family: inherit;
             
-            /* NEW: Make chat-container a flex container to manage its children screens */
-            display: flex; 
-            flex-direction: column;
+            /* MODIFIED: Make chat-container a flex container to manage its children screens when open */
+            flex-direction: column; 
+        }
+
+        .n8n-chat-widget .chat-container.position-left {
+            right: auto;
+            left: 20px;
         }
 
         .n8n-chat-widget .chat-container.open {
-            display: flex; /* Show when open */
+            display: flex; /* MODIFIED: Show when open */
         }
 
         .n8n-chat-widget .brand-header {
@@ -65,9 +69,21 @@
             opacity: 1;
         }
 
+        .n8n-chat-widget .brand-header .brand-logo-link { /* NEW: Style for the logo link */
+            display: flex; /* To center the image */
+            align-items: center;
+            height: 32px; /* Match image height */
+            text-decoration: none; /* Remove underline */
+            cursor: pointer;
+        }
+
         .n8n-chat-widget .brand-header img {
             width: 32px;
             height: 32px;
+            transition: transform 0.2s;
+        }
+        .n8n-chat-widget .brand-header img:hover {
+            transform: scale(1.05);
         }
 
         .n8n-chat-widget .brand-header span {
@@ -169,15 +185,11 @@
         /* FINE NUOVO CSS PER DOMANDE RAPIDE */
 
         /* NEW: Styles for the main chat interface screen */
-        .n8n-chat-widget .chat-interface-screen { /* Renamed from .chat-interface */
+        .n8n-chat-widget .chat-interface-screen { 
             display: none; /* Hidden by default */
             flex-direction: column;
             height: 100%; /* Take full height of parent */
             flex-grow: 1; /* Allow it to take available vertical space */
-        }
-
-        .n8n-chat-widget .chat-interface-screen.active { /* This class is no longer needed with new display logic */
-            /* display: flex; */
         }
 
         .n8n-chat-widget .chat-messages {
@@ -309,6 +321,79 @@
         .n8n-chat-widget .chat-footer a:hover {
             opacity: 1;
         }
+
+        /* NEW: CSS for Confirmation Modal */
+        .n8n-chat-widget .confirmation-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1001; /* Higher than chat container */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .n8n-chat-widget .confirmation-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .n8n-chat-widget .confirmation-modal-content {
+            background: var(--chat--color-background);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            max-width: 350px;
+            text-align: center;
+            color: var(--chat--color-font);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .n8n-chat-widget .confirmation-modal-content h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--chat--color-font);
+        }
+        .n8n-chat-widget .confirmation-modal-buttons {
+            margin-top: 25px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .n8n-chat-widget .confirmation-modal-buttons button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: background 0.2s, transform 0.2s;
+            font-family: inherit;
+        }
+        .n8n-chat-widget .confirmation-modal-buttons .confirm-btn {
+            background: linear-gradient(135deg, var(--chat--color-primary) 0%, var(--chat--color-secondary) 100%);
+            color: white;
+            border: none;
+        }
+        .n8n-chat-widget .confirmation-modal-buttons .confirm-btn:hover {
+            transform: scale(1.02);
+        }
+        .n8n-chat-widget .confirmation-modal-buttons .cancel-btn {
+            background: var(--chat--color-background);
+            color: var(--chat--color-font);
+            border: 1px solid rgba(133, 79, 255, 0.2);
+            opacity: 0.8;
+        }
+        .n8n-chat-widget .confirmation-modal-buttons .cancel-btn:hover {
+            opacity: 1;
+            transform: scale(1.02);
+            border-color: var(--chat--color-primary);
+        }
     `;
 
     // Load Geist font
@@ -316,12 +401,6 @@
     fontLink.rel = 'stylesheet';
     fontLink.href = 'https://cdn.jsdelivr.net/npm/geist@1.0.0/dist/fonts/geist-sans/style.css';
     document.head.appendChild(fontLink);
-
-    // NEW: Load Marked.js for Markdown parsing
-    const markedScript = document.createElement('script');
-    markedScript.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
-    document.head.appendChild(markedScript);
-
 
     // Inject styles
     const styleSheet = document.createElement('style');
@@ -342,7 +421,8 @@
             poweredBy: {
                 text: 'Powered by n8n',
                 link: 'https://n8n.partnerlinks.io/m8a94i19zhqq?utm_source=nocodecreative.io'
-            }
+            },
+            homeLink: '/' // NEW: Default home link for logo redirection
         },
         style: {
             primaryColor: '',
@@ -357,7 +437,14 @@
     const config = window.ChatWidgetConfig ? 
         {
             webhook: { ...defaultConfig.webhook, ...window.ChatWidgetConfig.webhook },
-            branding: { ...defaultConfig.branding, ...window.ChatWidgetConfig.branding },
+            branding: { 
+                ...defaultConfig.branding, 
+                ...window.ChatWidgetConfig.branding,
+                poweredBy: { // Ensure nested poweredBy is merged correctly
+                    ...defaultConfig.branding.poweredBy,
+                    ...(window.ChatWidgetConfig.branding && window.ChatWidgetConfig.branding.poweredBy ? window.ChatWidgetConfig.branding.poweredBy : {})
+                }
+            },
             style: { ...defaultConfig.style, ...window.ChatWidgetConfig.style }
         } : defaultConfig;
 
@@ -383,7 +470,9 @@
     // NEW: Single brand header at the top level of chatContainer
     const brandHeaderHTML = `
         <div class="brand-header">
-            <img src="${config.branding.logo}" alt="${config.branding.name}">
+            <a href="${config.branding.homeLink || '/'}" class="brand-logo-link"> <!-- MODIFIED: Wrapped logo in <a> tag -->
+                <img src="${config.branding.logo}" alt="${config.branding.name}">
+            </a>
             <span>${config.branding.name}</span>
             <button class="close-button">×</button>
         </div>
@@ -433,6 +522,24 @@
         </svg>`;
     
     widgetContainer.appendChild(chatContainer);
+
+    // NEW: Add confirmation modal HTML
+    const confirmationModalHTML = `
+        <div class="confirmation-modal-overlay">
+            <div class="confirmation-modal-content">
+                <h3 class="modal-title"></h3>
+                <p class="modal-message"></p>
+                <div class="confirmation-modal-buttons">
+                    <button class="confirm-btn"></button>
+                    <button class="cancel-btn">Annulla</button>
+                </div>
+            </div>
+        </div>
+    `;
+    const modalDiv = document.createElement('div');
+    modalDiv.innerHTML = confirmationModalHTML;
+    widgetContainer.appendChild(modalDiv.firstElementChild); // Append the actual div, not its wrapper
+    
     widgetContainer.appendChild(toggleButton);
     document.body.appendChild(widgetContainer);
 
@@ -444,16 +551,53 @@
     const messagesContainer = chatContainer.querySelector('.chat-messages');
     const textarea = chatContainer.querySelector('textarea');
     const sendButton = chatContainer.querySelector('button[type="submit"]');
+    const brandLogoLink = chatContainer.querySelector('.brand-logo-link'); // NEW
+    
+    // NEW: Modal elements
+    const modalOverlay = widgetContainer.querySelector('.confirmation-modal-overlay');
+    const modalTitle = modalOverlay.querySelector('.modal-title');
+    const modalMessage = modalOverlay.querySelector('.modal-message');
+    const confirmBtn = modalOverlay.querySelector('.confirm-btn');
+    const cancelBtn = modalOverlay.querySelector('.cancel-btn');
 
-    // Initial state: show new conversation screen, hide chat interface screen
-    newConversationScreen.style.display = 'flex'; 
-    chatInterfaceScreen.style.display = 'none';
+    // Initial state: ensure chat container is hidden by default
+    chatContainer.classList.remove('open'); // Ensure it's closed on load
+    newConversationScreen.style.display = 'flex'; // Show initial screen
+    chatInterfaceScreen.style.display = 'none'; // Hide chat interface
+
+    let currentConfirmCallback = null; // To store the callback for the confirm button
+
+    // NEW: Confirmation Modal Functions
+    function showConfirmationModal(title, message, confirmText, onConfirm) {
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        confirmBtn.textContent = confirmText;
+        currentConfirmCallback = onConfirm; // Store the callback
+        modalOverlay.classList.add('active');
+    }
+
+    function hideConfirmationModal() {
+        modalOverlay.classList.remove('active');
+        currentConfirmCallback = null; // Clear the callback
+    }
+
+    // NEW: Add event listeners for modal buttons
+    confirmBtn.addEventListener('click', () => {
+        if (currentConfirmCallback) {
+            currentConfirmCallback();
+        }
+        hideConfirmationModal();
+    });
+
+    cancelBtn.addEventListener('click', hideConfirmationModal);
 
     function generateUUID() {
         return crypto.randomUUID();
     }
 
     async function startNewConversation() {
+        // Clear previous messages when starting a new conversation
+        messagesContainer.innerHTML = ''; 
         currentSessionId = generateUUID();
         const data = [{
             action: "loadPreviousSession",
@@ -468,13 +612,7 @@
         newConversationScreen.style.display = 'none';
         chatInterfaceScreen.style.display = 'flex'; 
         
-        // IMPORTANT: Clear previous messages when starting a new conversation
-        messagesContainer.innerHTML = ''; 
-
         try {
-            // Make the call to n8n to initialize the session.
-            // We DO NOT append a bot message here, as the actual first bot response
-            // will come AFTER the user sends their first message via sendMessage().
             const response = await fetch(config.webhook.url, {
                 method: 'POST',
                 headers: {
@@ -483,12 +621,14 @@
                 body: JSON.stringify(data)
             });
 
-            // We still need to parse the response to ensure it's valid JSON,
-            // even if we don't display its 'output' immediately.
-            const responseData = await response.json(); 
-            // Optional: You could log responseData here to debug n8n's initial response.
-            // console.log("n8n loadPreviousSession response:", responseData);
-
+            const responseData = await response.json();
+            
+            const botMessageDiv = document.createElement('div');
+            botMessageDiv.className = 'chat-message bot';
+            // Gestisce sia array che oggetti singoli per l'output
+            botMessageDiv.textContent = Array.isArray(responseData) && responseData.length > 0 ? responseData[0].output : (responseData.output || 'Something went wrong.');
+            messagesContainer.appendChild(botMessageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
             console.error('Error starting new conversation:', error);
             const errorMessageDiv = document.createElement('div');
@@ -500,7 +640,6 @@
             newConversationScreen.style.display = 'flex';
             chatInterfaceScreen.style.display = 'none';
             currentSessionId = ''; // Reset session ID if it failed to start
-            messagesContainer.innerHTML = ''; // Clear messages again if error
         }
     }
 
@@ -517,7 +656,7 @@
 
         const userMessageDiv = document.createElement('div');
         userMessageDiv.className = 'chat-message user';
-        userMessageDiv.textContent = message; // User message is plain text
+        userMessageDiv.textContent = message;
         messagesContainer.appendChild(userMessageDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -534,18 +673,8 @@
             
             const botMessageDiv = document.createElement('div');
             botMessageDiv.className = 'chat-message bot';
-            
-            let botOutput = Array.isArray(data) && data.length > 0 ? data[0].output : (data.output || 'Sorry, I could not get a response.');
-            
-            // NEW: Parse Markdown for bot output
-            // Check if marked is available (it should be, but good practice)
-            if (typeof marked !== 'undefined') {
-                botMessageDiv.innerHTML = marked.parse(botOutput);
-            } else {
-                // Fallback if marked.js fails to load
-                botMessageDiv.textContent = botOutput;
-            }
-            
+            // Gestisce sia array che oggetti singoli per l'output
+            botMessageDiv.textContent = Array.isArray(data) && data.length > 0 ? data[0].output : (data.output || 'Sorry, I could not get a response.');
             messagesContainer.appendChild(botMessageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
@@ -606,16 +735,38 @@
         chatContainer.classList.toggle('open');
     });
 
-    // Add close button handlers
+    // Add close button handlers (MODIFIED to use confirmation modal)
     const closeButtons = chatContainer.querySelectorAll('.close-button');
     closeButtons.forEach(button => {
         button.addEventListener('click', () => {
-              chatContainer.classList.remove('open');
-              // Optional: Reset chat to initial screen when closed
-              newConversationScreen.style.display = 'flex';
-              chatInterfaceScreen.style.display = 'none';
-              messagesContainer.innerHTML = ''; // Clear messages
-              currentSessionId = ''; // Reset session ID
+            showConfirmationModal(
+                "Conferma chiusura",
+                "Stai chiudendo la conversazione. I dati non verranno salvati. Continuare?",
+                "Sì, chiudi",
+                () => { // This is the onConfirm callback
+                    chatContainer.classList.remove('open');
+                    newConversationScreen.style.display = 'flex';
+                    chatInterfaceScreen.style.display = 'none';
+                    messagesContainer.innerHTML = ''; // Clear messages
+                    currentSessionId = ''; // Reset session ID
+                }
+            );
         });
     });
+
+    // NEW: Add event listener for logo click (uses confirmation modal)
+    if (brandLogoLink) { // Check if the element exists
+        brandLogoLink.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent default link behavior (redirect immediately)
+            showConfirmationModal(
+                "Conferma navigazione",
+                "Stai chiudendo la conversazione. I dati non verranno salvati. Continuare?",
+                "Sì, vai alla home",
+                () => { // This is the onConfirm callback
+                    window.location.href = config.branding.homeLink || '/'; // Redirect to home
+                }
+            );
+        });
+    }
+
 })(); 
