@@ -15,7 +15,7 @@
             bottom: 20px;
             right: 20px;
             z-index: 1000;
-            display: none;
+            display: none; /* Hidden by default, shown by toggle button */
             width: 380px;
             height: 600px;
             background: var(--chat--color-background);
@@ -24,6 +24,10 @@
             border: 1px solid rgba(133, 79, 255, 0.2);
             overflow: hidden;
             font-family: inherit;
+            
+            /* NEW: Make chat-container a flex container to manage its children screens */
+            display: flex; 
+            flex-direction: column;
         }
 
         .n8n-chat-widget .chat-container.position-left {
@@ -32,8 +36,7 @@
         }
 
         .n8n-chat-widget .chat-container.open {
-            display: flex;
-            flex-direction: column;
+            display: flex; /* Show when open */
         }
 
         .n8n-chat-widget .brand-header {
@@ -78,15 +81,18 @@
             color: var(--chat--color-font);
         }
 
-        .n8n-chat-widget .new-conversation {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        /* NEW: Styles for the initial new conversation screen */
+        .n8n-chat-widget .new-conversation-screen {
             padding: 20px;
             text-align: center;
             width: 100%;
-            max-width: 300px;
+            max-width: 300px; /* Constrain width within flex container */
+            margin: auto; /* Center horizontally within parent */
+            flex-grow: 1; /* Allow it to take available vertical space */
+            display: flex; /* Make it a flex container */
+            flex-direction: column; /* Stack children vertically */
+            justify-content: center; /* Center content vertically */
+            align-items: center; /* Center content horizontally */
         }
 
         .n8n-chat-widget .welcome-text {
@@ -139,6 +145,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px; /* Spazio tra i pulsanti */
+            width: 100%; /* Take full width of parent */
         }
 
         .n8n-chat-widget .quick-question-btn {
@@ -166,14 +173,16 @@
         }
         /* FINE NUOVO CSS PER DOMANDE RAPIDE */
 
-        .n8n-chat-widget .chat-interface {
-            display: none;
+        /* NEW: Styles for the main chat interface screen */
+        .n8n-chat-widget .chat-interface-screen { /* Renamed from .chat-interface */
+            display: none; /* Hidden by default */
             flex-direction: column;
-            height: 100%;
+            height: 100%; /* Take full height of parent */
+            flex-grow: 1; /* Allow it to take available vertical space */
         }
 
-        .n8n-chat-widget .chat-interface.active {
-            display: flex;
+        .n8n-chat-widget .chat-interface-screen.active { /* This class is no longer needed with new display logic */
+            /* display: flex; */
         }
 
         .n8n-chat-widget .chat-messages {
@@ -370,14 +379,18 @@
     const chatContainer = document.createElement('div');
     chatContainer.className = `chat-container${config.style.position === 'left' ? ' position-left' : ''}`;
     
-    // MODIFICATO: Aggiunto div.quick-questions con i pulsanti
-    const newConversationHTML = `
+    // NEW: Single brand header at the top level of chatContainer
+    const brandHeaderHTML = `
         <div class="brand-header">
             <img src="${config.branding.logo}" alt="${config.branding.name}">
             <span>${config.branding.name}</span>
             <button class="close-button">×</button>
         </div>
-        <div class="new-conversation">
+    `;
+
+    // NEW: The initial screen for starting a new conversation
+    const newConversationScreenHTML = `
+        <div class="new-conversation-screen">
             <h2 class="welcome-text">${config.branding.welcomeText}</h2>
             <p class="response-text">${config.branding.responseTimeText}</p>
             <button class="new-chat-btn">
@@ -394,13 +407,9 @@
         </div>
     `;
 
-    const chatInterfaceHTML = `
-        <div class="chat-interface">
-            <div class="brand-header">
-                <img src="${config.branding.logo}" alt="${config.branding.name}">
-                <span>${config.branding.name}</span>
-                <button class="close-button">×</button>
-            </div>
+    // NEW: The actual chat interface screen
+    const chatInterfaceScreenHTML = `
+        <div class="chat-interface-screen">
             <div class="chat-messages"></div>
             <div class="chat-input">
                 <textarea placeholder="Scrivi il tuo messaggio..." rows="1"></textarea>
@@ -412,7 +421,8 @@
         </div>
     `;
     
-    chatContainer.innerHTML = newConversationHTML + chatInterfaceHTML;
+    // Combine all parts into chatContainer
+    chatContainer.innerHTML = brandHeaderHTML + newConversationScreenHTML + chatInterfaceScreenHTML;
     
     const toggleButton = document.createElement('button');
     toggleButton.className = `chat-toggle${config.style.position === 'left' ? ' position-left' : ''}`;
@@ -425,14 +435,18 @@
     widgetContainer.appendChild(toggleButton);
     document.body.appendChild(widgetContainer);
 
-    // Riferimenti agli elementi DOM
+    // Riferimenti agli elementi DOM (updated selectors)
     const newChatBtn = chatContainer.querySelector('.new-chat-btn');
-    // NUOVO: Ottieni i riferimenti ai pulsanti delle domande rapide
     const quickQuestionButtons = chatContainer.querySelectorAll('.quick-question-btn');
-    const chatInterface = chatContainer.querySelector('.chat-interface');
+    const newConversationScreen = chatContainer.querySelector('.new-conversation-screen'); 
+    const chatInterfaceScreen = chatContainer.querySelector('.chat-interface-screen');   
     const messagesContainer = chatContainer.querySelector('.chat-messages');
     const textarea = chatContainer.querySelector('textarea');
     const sendButton = chatContainer.querySelector('button[type="submit"]');
+
+    // Initial state: show new conversation screen, hide chat interface screen
+    newConversationScreen.style.display = 'flex'; 
+    chatInterfaceScreen.style.display = 'none';
 
     function generateUUID() {
         return crypto.randomUUID();
@@ -449,6 +463,10 @@
             }
         }];
 
+        // Hide new conversation screen, show chat interface screen
+        newConversationScreen.style.display = 'none';
+        chatInterfaceScreen.style.display = 'flex'; 
+        
         try {
             const response = await fetch(config.webhook.url, {
                 method: 'POST',
@@ -459,11 +477,7 @@
             });
 
             const responseData = await response.json();
-            // Assicurati che l'header della brand e la nuova conversazione siano nascosti prima di attivare la chat
-            chatContainer.querySelector('.brand-header').style.display = 'none';
-            chatContainer.querySelector('.new-conversation').style.display = 'none';
-            chatInterface.classList.add('active');
-
+            
             const botMessageDiv = document.createElement('div');
             botMessageDiv.className = 'chat-message bot';
             // Gestisce sia array che oggetti singoli per l'output
@@ -472,12 +486,15 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
             console.error('Error starting new conversation:', error);
-            // Opzionale: Mostra un messaggio di errore all'utente
             const errorMessageDiv = document.createElement('div');
             errorMessageDiv.className = 'chat-message bot';
             errorMessageDiv.textContent = 'Sorry, I\'m having trouble starting a conversation right now. Please try again later.';
             messagesContainer.appendChild(errorMessageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            // Revert to initial screen if conversation failed to start
+            newConversationScreen.style.display = 'flex';
+            chatInterfaceScreen.style.display = 'none';
+            currentSessionId = ''; // Reset session ID if it failed to start
         }
     }
 
@@ -527,24 +544,26 @@
 
     newChatBtn.addEventListener('click', startNewConversation);
     
-    // NUOVO: Listener per i pulsanti delle domande rapide
+    // Listener per i pulsanti delle domande rapide
     quickQuestionButtons.forEach(button => {
         button.addEventListener('click', async () => {
-            const question = button.dataset.question; // Ottieni la domanda dall'attributo data-question
+            const question = button.dataset.question; 
 
             if (!currentSessionId) {
                 // Se non c'è una sessione attiva, avviane una nuova.
-                // Questo attiverà anche la visualizzazione dell'interfaccia di chat
-                // e la risposta iniziale del bot.
-                await startNewConversation(); // Attendiamo che la conversazione sia avviata e il primo messaggio bot ricevuto
+                await startNewConversation(); 
+                // Se startNewConversation fallisce, la sessione non sarà impostata e l'esecuzione si fermerà qui.
+                if (!currentSessionId) {
+                    return; // Exit if conversation failed to start
+                }
             }
             
             // Invia la domanda rapida come messaggio dell'utente
             sendMessage(question);
 
-            // Assicurati che l'interfaccia di chat sia mostrata se non lo è già
-            chatContainer.querySelector('.new-conversation').style.display = 'none';
-            chatInterface.classList.add('active');
+            // Assicurati che l'interfaccia di chat sia mostrata (redundante se startNewConversation ha successo, ma sicuro)
+            newConversationScreen.style.display = 'none';
+            chatInterfaceScreen.style.display = 'flex';
         });
     });
 
@@ -576,6 +595,11 @@
     closeButtons.forEach(button => {
         button.addEventListener('click', () => {
               chatContainer.classList.remove('open');
+              // Optional: Reset chat to initial screen when closed
+              newConversationScreen.style.display = 'flex';
+              chatInterfaceScreen.style.display = 'none';
+              messagesContainer.innerHTML = ''; // Clear messages
+              currentSessionId = ''; // Reset session ID
         });
     });
-})(); // QUESTA È LA CHIUSURA CORRETTA E DEVE ESSERE L'ULTIMA COSA NEL FILE
+})(); 
