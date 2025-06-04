@@ -30,11 +30,6 @@
             flex-direction: column;
         }
 
-        .n8n-chat-widget .chat-container.position-left {
-            right: auto;
-            left: 20px;
-        }
-
         .n8n-chat-widget .chat-container.open {
             display: flex; /* Show when open */
         }
@@ -322,6 +317,12 @@
     fontLink.href = 'https://cdn.jsdelivr.net/npm/geist@1.0.0/dist/fonts/geist-sans/style.css';
     document.head.appendChild(fontLink);
 
+    // NEW: Load Marked.js for Markdown parsing
+    const markedScript = document.createElement('script');
+    markedScript.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+    document.head.appendChild(markedScript);
+
+
     // Inject styles
     const styleSheet = document.createElement('style');
     styleSheet.textContent = styles;
@@ -516,7 +517,7 @@
 
         const userMessageDiv = document.createElement('div');
         userMessageDiv.className = 'chat-message user';
-        userMessageDiv.textContent = message;
+        userMessageDiv.textContent = message; // User message is plain text
         messagesContainer.appendChild(userMessageDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -533,8 +534,18 @@
             
             const botMessageDiv = document.createElement('div');
             botMessageDiv.className = 'chat-message bot';
-            // Gestisce sia array che oggetti singoli per l'output
-            botMessageDiv.textContent = Array.isArray(data) && data.length > 0 ? data[0].output : (data.output || 'Sorry, I could not get a response.');
+            
+            let botOutput = Array.isArray(data) && data.length > 0 ? data[0].output : (data.output || 'Sorry, I could not get a response.');
+            
+            // NEW: Parse Markdown for bot output
+            // Check if marked is available (it should be, but good practice)
+            if (typeof marked !== 'undefined') {
+                botMessageDiv.innerHTML = marked.parse(botOutput);
+            } else {
+                // Fallback if marked.js fails to load
+                botMessageDiv.textContent = botOutput;
+            }
+            
             messagesContainer.appendChild(botMessageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
