@@ -226,6 +226,24 @@
             align-self: flex-start;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
+        /* NEW: Basic styling for markdown elements within bot messages */
+        .n8n-chat-widget .chat-message.bot strong {
+            font-weight: 600;
+        }
+        .n8n-chat-widget .chat-message.bot a {
+            color: var(--chat--color-primary);
+            text-decoration: underline;
+        }
+        .n8n-chat-widget .chat-message.bot ul,
+        .n8n-chat-widget .chat-message.bot ol {
+            margin-left: 20px;
+            padding-left: 0;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+        .n8n-chat-widget .chat-message.bot li {
+            margin-bottom: 5px;
+        }
 
         .n8n-chat-widget .chat-input {
             padding: 16px;
@@ -401,6 +419,18 @@
     fontLink.rel = 'stylesheet';
     fontLink.href = 'https://cdn.jsdelivr.net/npm/geist@1.0.0/dist/fonts/geist-sans/style.css';
     document.head.appendChild(fontLink);
+
+    // NEW: Load Marked.js for Markdown rendering
+    const markedScript = document.createElement('script');
+    markedScript.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+    markedScript.onload = () => {
+        // Optional: Configure marked if needed
+        // marked.setOptions({
+        //     gfm: true, // Use GitHub Flavored Markdown
+        //     breaks: true, // Convert newlines to <br>
+        // });
+    };
+    document.head.appendChild(markedScript);
 
     // Inject styles
     const styleSheet = document.createElement('style');
@@ -591,6 +621,15 @@
 
     cancelBtn.addEventListener('click', hideConfirmationModal);
 
+    // NEW: Helper function to render Markdown
+    function renderMarkdown(text) {
+        if (typeof marked === 'undefined') {
+            console.warn('Marked.js is not loaded. Markdown will not be rendered.');
+            return text; // Return raw text if marked is not available
+        }
+        return marked.parse(text);
+    }
+
     function generateUUID() {
         return crypto.randomUUID();
     }
@@ -622,12 +661,15 @@
             });
 
             const responseData = await response.json();
-            
-            const botMessageDiv = document.createElement('div');
-            botMessageDiv.className = 'chat-message bot';
-            // Gestisce sia array che oggetti singoli per l'output
-            botMessageDiv.textContent = Array.isArray(responseData) && responseData.length > 0 ? responseData[0].output : (responseData.output || 'Something went wrong.');
-            messagesContainer.appendChild(botMessageDiv);
+            // MODIFIED: Robustly get output and handle empty/null
+            const botOutput = Array.isArray(responseData) && responseData.length > 0 && responseData[0].output ? responseData[0].output : (responseData.output || '');
+
+            if (botOutput.trim().length > 0) { // Only add message if output is not empty
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.className = 'chat-message bot';
+                botMessageDiv.innerHTML = renderMarkdown(botOutput); // MODIFIED: Render Markdown
+                messagesContainer.appendChild(botMessageDiv);
+            }
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
             console.error('Error starting new conversation:', error);
@@ -670,12 +712,15 @@
             });
             
             const data = await response.json();
+            // MODIFIED: Robustly get output and handle empty/null
+            const botOutput = Array.isArray(data) && data.length > 0 && data[0].output ? data[0].output : (data.output || '');
             
-            const botMessageDiv = document.createElement('div');
-            botMessageDiv.className = 'chat-message bot';
-            // Gestisce sia array che oggetti singoli per l'output
-            botMessageDiv.textContent = Array.isArray(data) && data.length > 0 ? data[0].output : (data.output || 'Sorry, I could not get a response.');
-            messagesContainer.appendChild(botMessageDiv);
+            if (botOutput.trim().length > 0) { // Only add message if output is not empty
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.className = 'chat-message bot';
+                botMessageDiv.innerHTML = renderMarkdown(botOutput); // MODIFIED: Render Markdown
+                messagesContainer.appendChild(botMessageDiv);
+            }
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
             console.error('Error sending message:', error);
