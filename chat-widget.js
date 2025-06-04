@@ -130,7 +130,41 @@
             color: var(--chat--color-font);
             opacity: 0.7;
             margin: 0;
+            margin-bottom: 15px; /* Aggiunto per spaziatura */
         }
+
+        /* INIZIO NUOVO CSS PER DOMANDE RAPIDE */
+        .n8n-chat-widget .quick-questions {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Spazio tra i pulsanti */
+        }
+
+        .n8n-chat-widget .quick-question-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 12px 20px;
+            background: var(--chat--color-background); /* Sfondo chiaro */
+            color: var(--chat--color-font); /* Colore del testo principale */
+            border: 1px solid rgba(133, 79, 255, 0.2); /* Bordo leggero */
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: transform 0.2s, background 0.2s, border-color 0.2s;
+            font-weight: 400;
+            font-family: inherit;
+            text-align: left; /* Allinea il testo a sinistra per leggibilità */
+        }
+
+        .n8n-chat-widget .quick-question-btn:hover {
+            transform: translateY(-2px); /* Effetto leggero al passaggio del mouse */
+            background: rgba(133, 79, 255, 0.05); /* Sfondo leggermente colorato all'hover */
+            border-color: var(--chat--color-primary); /* Bordo colorato all'hover */
+        }
+        /* FINE NUOVO CSS PER DOMANDE RAPIDE */
 
         .n8n-chat-widget .chat-interface {
             display: none;
@@ -142,7 +176,7 @@
             display: flex;
         }
 
-        .n8n-chat-widget .chat-messages {
+        .n8n-chat-widget .chat-s {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
@@ -151,7 +185,7 @@
             flex-direction: column;
         }
 
-        .n8n-chat-widget .chat-message {
+        .n8n-chat-widget .chat- {
             padding: 12px 16px;
             margin: 8px 0;
             border-radius: 12px;
@@ -161,7 +195,7 @@
             line-height: 1.5;
         }
 
-        .n8n-chat-widget .chat-message.user {
+        .n8n-chat-widget .chat-.user {
             background: linear-gradient(135deg, var(--chat--color-primary) 0%, var(--chat--color-secondary) 100%);
             color: white;
             align-self: flex-end;
@@ -169,7 +203,7 @@
             border: none;
         }
 
-        .n8n-chat-widget .chat-message.bot {
+        .n8n-chat-widget .chat-.bot {
             background: var(--chat--color-background);
             border: 1px solid rgba(133, 79, 255, 0.2);
             color: var(--chat--color-font);
@@ -301,7 +335,6 @@
             }
         },
         style: {
-        suggestions: []
             primaryColor: '',
             secondaryColor: '',
             position: 'right',
@@ -315,12 +348,8 @@
         {
             webhook: { ...defaultConfig.webhook, ...window.ChatWidgetConfig.webhook },
             branding: { ...defaultConfig.branding, ...window.ChatWidgetConfig.branding },
-            style: {
-        suggestions: [] ...defaultConfig.style, ...window.ChatWidgetConfig.style }
-        
-        suggestions: window.ChatWidgetConfig.suggestions || []
-
-    } : defaultConfig;
+            style: { ...defaultConfig.style, ...window.ChatWidgetConfig.style }
+        } : defaultConfig;
 
     // Prevent multiple initializations
     if (window.N8NChatWidgetInitialized) return;
@@ -341,26 +370,7 @@
     const chatContainer = document.createElement('div');
     chatContainer.className = `chat-container${config.style.position === 'left' ? ' position-left' : ''}`;
     
-    
-    let suggestionsHTML = '';
-    if (config.suggestions.length > 0) {
-        suggestionsHTML = `
-            <div class="suggestions-container" style="margin-top: 12px;">
-                ${config.suggestions.map(text => `
-                    <button class="suggestion-btn" style="
-                        margin: 4px;
-                        padding: 8px 12px;
-                        border: 1px solid var(--chat--color-primary);
-                        border-radius: 16px;
-                        background: transparent;
-                        color: var(--chat--color-primary);
-                        cursor: pointer;
-                        font-size: 14px;
-                    ">${text}</button>`).join('')}
-            </div>`;
-    }
-
-
+    // MODIFICATO: Aggiunto div.quick-questions con i pulsanti
     const newConversationHTML = `
         <div class="brand-header">
             <img src="${config.branding.logo}" alt="${config.branding.name}">
@@ -369,14 +379,18 @@
         </div>
         <div class="new-conversation">
             <h2 class="welcome-text">${config.branding.welcomeText}</h2>
+            <p class="response-text">${config.branding.responseTimeText}</p>
             <button class="new-chat-btn">
-                <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <svg class="-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/>
                 </svg>
-                Send us a message
+                Chatta con noi!
             </button>
-            ${suggestionsHTML}
-            <p class="response-text">${config.branding.responseTimeText}</p>
+            <div class="quick-questions">
+                <button class="quick-question-btn" data-question="Mi fornisci il tracking del mio ordine?">Mi fornisci il tracking del mio ordine?</button>
+                <button class="quick-question-btn" data-question="Voglio informazioni su un prodotto, mi aiuti?">Voglio informazioni su un prodotto, mi aiuti?</button>
+                <button class="quick-question-btn" data-question="Quali sono le politiche di reso dei prodotti?">Quali sono le politiche di reso dei prodotti?</button>
+            </div>
         </div>
     `;
 
@@ -389,8 +403,8 @@
             </div>
             <div class="chat-messages"></div>
             <div class="chat-input">
-                <textarea placeholder="Type your message here..." rows="1"></textarea>
-                <button type="submit">Send</button>
+                <textarea placeholder="Scrivi il tuo messaggio..." rows="1"></textarea>
+                <button type="submit">Invia</button>
             </div>
             <div class="chat-footer">
                 <a href="${config.branding.poweredBy.link}" target="_blank">${config.branding.poweredBy.text}</a>
@@ -411,7 +425,10 @@
     widgetContainer.appendChild(toggleButton);
     document.body.appendChild(widgetContainer);
 
+    // Riferimenti agli elementi DOM
     const newChatBtn = chatContainer.querySelector('.new-chat-btn');
+    // NUOVO: Ottieni i riferimenti ai pulsanti delle domande rapide
+    const quickQuestionButtons = chatContainer.querySelectorAll('.quick-question-btn');
     const chatInterface = chatContainer.querySelector('.chat-interface');
     const messagesContainer = chatContainer.querySelector('.chat-messages');
     const textarea = chatContainer.querySelector('textarea');
@@ -442,17 +459,25 @@
             });
 
             const responseData = await response.json();
+            // Assicurati che l'header della brand e la nuova conversazione siano nascosti prima di attivare la chat
             chatContainer.querySelector('.brand-header').style.display = 'none';
             chatContainer.querySelector('.new-conversation').style.display = 'none';
             chatInterface.classList.add('active');
 
             const botMessageDiv = document.createElement('div');
             botMessageDiv.className = 'chat-message bot';
-            botMessageDiv.textContent = Array.isArray(responseData) ? responseData[0].output : responseData.output;
+            // Gestisce sia array che oggetti singoli per l'output
+            botMessageDiv.textContent = Array.isArray(responseData) && responseData.length > 0 ? responseData[0].output : (responseData.output || 'Something went wrong.');
             messagesContainer.appendChild(botMessageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error starting new conversation:', error);
+            // Opzionale: Mostra un messaggio di errore all'utente
+            const errorMessageDiv = document.createElement('div');
+            errorMessageDiv.className = 'chat-message bot';
+            errorMessageDiv.textContent = 'Sorry, I\'m having trouble starting a conversation right now. Please try again later.';
+            messagesContainer.appendChild(errorMessageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
     }
 
@@ -486,24 +511,43 @@
             
             const botMessageDiv = document.createElement('div');
             botMessageDiv.className = 'chat-message bot';
-            botMessageDiv.textContent = Array.isArray(data) ? data[0].output : data.output;
+            // Gestisce sia array che oggetti singoli per l'output
+            botMessageDiv.textContent = Array.isArray(data) && data.length > 0 ? data[0].output : (data.output || 'Sorry, I could not get a response.');
             messagesContainer.appendChild(botMessageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error sending message:', error);
+            const errorMessageDiv = document.createElement('div');
+            errorMessageDiv.className = 'chat-message bot';
+            errorMessageDiv.textContent = 'Sorry, I\'m having trouble responding right now.';
+            messagesContainer.appendChild(errorMessageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
     }
 
     newChatBtn.addEventListener('click', startNewConversation);
-chatContainer.addEventListener('click', function(e) {
-        if (e.target.classList.contains('suggestion-btn')) {
-            const question = e.target.textContent;
+    
+    // NUOVO: Listener per i pulsanti delle domande rapide
+    quickQuestionButtons.forEach(button => {
+        button.addEventListener('click', async () => {
+            const question = button.dataset.question; // Ottieni la domanda dall'attributo data-question
+
+            if (!currentSessionId) {
+                // Se non c'è una sessione attiva, avviane una nuova.
+                // Questo attiverà anche la visualizzazione dell'interfaccia di chat
+                // e la risposta iniziale del bot.
+                await startNewConversation(); // Attendiamo che la conversazione sia avviata e il primo messaggio bot ricevuto
+            }
+            
+            // Invia la domanda rapida come messaggio dell'utente
             sendMessage(question);
+
+            // Assicurati che l'interfaccia di chat sia mostrata se non lo è già
             chatContainer.querySelector('.new-conversation').style.display = 'none';
             chatInterface.classList.add('active');
-        }
+        });
     });
-    
+
     sendButton.addEventListener('click', () => {
         const message = textarea.value.trim();
         if (message) {
@@ -533,5 +577,7 @@ chatContainer.addEventListener('click', function(e) {
         button.addEventListener('click', () => {
             chatContainer.classList.remove('open');
         });
+    });
+})();
     });
 })();
